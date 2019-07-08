@@ -5,10 +5,10 @@ admin.initializeApp();
 
 const LINE_MESSAGING_API = 'https://api.line.me/v2/bot/message';
 const LINE_GET_USER_PROFILE = 'https://api.line.me/v2/bot/profile/';
-const LINE_GET_GROUP_PROFILE = 'https://api.line.me/v2/bot/group/';
+// const LINE_GET_GROUP_PROFILE = 'https://api.line.me/v2/bot/group/';
 const LINE_HEADER = {
   'Content-Type': 'application/json',
-  Authorization : `Bearer njqYzbipxGtAvq1saQ7jpBgE2niY+dwx5uNDPw6i9zGW4v7J7bx65Gzq1QnQYK2Hp3C5bDKvx7ZwHtj7HpwGvYmdLrE+CPfb8+A4sCZ7l9dTznsMIzBZyamADZmxnzBRo7XtSRqqkhsoAfgf2WAbrwdB04t89/1O/w1cDnyilFU=`
+  Authorization : `Bearer `
 };
 const region = 'asia-east2';
 const runtimeOpts = {
@@ -19,13 +19,11 @@ const runtimeOpts = {
 exports.LineBot = functions.region(region).runWith(runtimeOpts).https.onRequest( async (req, res) => {
   
   let event = req.body.events[0]
-  let eventType, groupId = "";
+  let eventType = "personal", groupId = "";
 
   if(event.source.type === 'group') {
     eventType = "group"
     groupId = event.source.groupId
-  } else {
-    eventType = "personal"
   }
 
   let replyToken = event.replyToken
@@ -34,6 +32,8 @@ exports.LineBot = functions.region(region).runWith(runtimeOpts).https.onRequest(
   let userId = event.source.userId
   let timeStamp = event.timestamp
   let userProfile = await getUserProfile(userId)
+
+  console.log("UserProfile" + userProfile)
 
   if (event.message.type !== 'text') {
       return;
@@ -86,23 +86,7 @@ const getUserProfile = async (userId) => {
 //   return JSON.parse(groupProfile)
 // }
 
-const replyDefault = (replyToken) => {
-  return request.post({
-    uri: `${LINE_MESSAGING_API}/reply`,
-    headers: LINE_HEADER,
-    body: JSON.stringify({
-      replyToken: replyToken,
-      messages: [
-        {
-          type: `text`,
-          text: "I don't understand that word"
-        }
-	  ]
-    })
-  })
-}
-
-const reply = (bodyResponse) => {
+const reply = (bodyResponse, message) => {
   return request.post({
     uri: `${LINE_MESSAGING_API}/reply`,
     headers: LINE_HEADER,
@@ -111,7 +95,7 @@ const reply = (bodyResponse) => {
       messages: [
         {
           type: `text`,
-          text: bodyResponse.events[0].message.text
+          text: message
         }
 	  ]
     })
@@ -143,4 +127,8 @@ const timeConverter = (timeStamp, option) => {
   } else {
     return 'not define'
   }
+}
+
+const textClassified = (text) => {
+
 }
