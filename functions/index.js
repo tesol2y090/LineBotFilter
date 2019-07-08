@@ -8,7 +8,7 @@ const LINE_GET_USER_PROFILE = 'https://api.line.me/v2/bot/profile/';
 const LINE_GET_GROUP_PROFILE = 'https://api.line.me/v2/bot/group/';
 const LINE_HEADER = {
   'Content-Type': 'application/json',
-  Authorization : `Bearer `
+  Authorization : `Bearer njqYzbipxGtAvq1saQ7jpBgE2niY+dwx5uNDPw6i9zGW4v7J7bx65Gzq1QnQYK2Hp3C5bDKvx7ZwHtj7HpwGvYmdLrE+CPfb8+A4sCZ7l9dTznsMIzBZyamADZmxnzBRo7XtSRqqkhsoAfgf2WAbrwdB04t89/1O/w1cDnyilFU=`
 };
 const region = 'asia-east2';
 const runtimeOpts = {
@@ -17,10 +17,20 @@ const runtimeOpts = {
 };
 
 exports.LineBot = functions.region(region).runWith(runtimeOpts).https.onRequest( async (req, res) => {
-
+  
   let event = req.body.events[0]
+  let eventType, groupId = "";
+
+  if(event.source.type === 'group') {
+    eventType = "group"
+    groupId = event.source.groupId
+  } else {
+    eventType = "personal"
+  }
+
   let replyToken = event.replyToken
   let text = event.message.text
+
   let userId = event.source.userId
   let timeStamp = event.timestamp
   let userProfile = await getUserProfile(userId)
@@ -29,21 +39,35 @@ exports.LineBot = functions.region(region).runWith(runtimeOpts).https.onRequest(
       return;
   }
 
-  writeData(replyToken, text, userId, userProfile, timeStamp);
-
+  writeDataToFirebase(eventType, replyToken, text, userId, userProfile, groupId, timeStamp);
+  
 });
 
-const writeData = (replyToken, text, userId, userProfile, timeStamp) => {
+const writeDataToFirebase = (eventType, replyToken, text, userId, userProfile, groupId , timeStamp) => {
 
   let fullDate = timeConverter(timeStamp, 'fullDate')
   let dateMonth = timeConverter(timeStamp, 'dateMonth')
+  let userName = userProfile.displayName
 
-  admin.database().ref(fullDate + '/' + replyToken).set({
-    'userId': userId,
-    'userProfile': userProfile.displayName,
-    'text': text,
-    'timeStamp': dateMonth
-  })
+  if(eventType === 'group') {
+    admin.database().ref(fullDate + '/' + eventType + '/' + groupId + '/' + replyToken).set({
+      'eventType': eventType,
+      'userId': userId,
+      'groupId': groupId,
+      'userProfile': userName,
+      'text': text,
+      'timeStamp': dateMonth
+    })
+  } else {
+    admin.database().ref(fullDate + '/' + eventType + '/' + userName + '/' + replyToken).set({
+      'eventType': eventType,
+      'userId': userId,
+      'userProfile': userName,
+      'text': text,
+      'timeStamp': dateMonth
+    })
+  }
+
 }
 
 const getUserProfile = async (userId) => {
@@ -54,13 +78,13 @@ const getUserProfile = async (userId) => {
   return JSON.parse(userProfile)
 }
 
-const getGroupProfile = async (groupId) => {
-  let groupProfile = await request.get({
-    uri: `${LINE_GET_GROUP_PROFILE}/${userId}`,
-    headers: LINE_HEADER
-  })
-  return JSON.parse(groupProfile)
-}
+// const getGroupProfile = async (groupId) => {
+//   let groupProfile = await request.get({
+//     uri: `${LINE_GET_GROUP_PROFILE}/${groupId}/`,
+//     headers: LINE_HEADER
+//   })
+//   return JSON.parse(groupProfile)
+// }
 
 const replyDefault = (replyToken) => {
   return request.post({
