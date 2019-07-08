@@ -4,6 +4,7 @@ const admin = require('firebase-admin');
 admin.initializeApp();
 
 const LINE_MESSAGING_API = 'https://api.line.me/v2/bot/message';
+const LINE_GET_PROFILE = 'https://api.line.me/v2/bot/profile/';
 const LINE_HEADER = {
   'Content-Type': 'application/json',
   Authorization : `Bearer njqYzbipxGtAvq1saQ7jpBgE2niY+dwx5uNDPw6i9zGW4v7J7bx65Gzq1QnQYK2Hp3C5bDKvx7ZwHtj7HpwGvYmdLrE+CPfb8+A4sCZ7l9dTznsMIzBZyamADZmxnzBRo7XtSRqqkhsoAfgf2WAbrwdB04t89/1O/w1cDnyilFU=`
@@ -14,39 +15,42 @@ const runtimeOpts = {
   memory: "2GB"
 };
 
-exports.LineBot = functions.region(region).runWith(runtimeOpts).https.onRequest((req, res) => {
+exports.LineBot = functions.region(region).runWith(runtimeOpts).https.onRequest( async (req, res) => {
 
   let event = req.body.events[0]
   let replyToken = event.replyToken
   let text = event.message.text
   let userId = event.source.userId
   let timeStamp = event.timestamp
+  let userProfile = await getUserProfile(userId)
 
   if (event.message.type !== 'text') {
       return;
   }
 
-  console.log("Event in group")
-  console.log(req.body)
-  console.log("Source in Event")
-  console.log(event.source)
-  console.log("Event in Message")
-  console.log(event.message)
-
-  writeData(replyToken, text, userId, timeStamp);
+  writeData(replyToken, text, userId, userProfile, timeStamp);
 
 });
 
-const writeData = (replyToken, text, userId, timeStamp) => {
+const writeData = (replyToken, text, userId, userProfile, timeStamp) => {
 
   let fullDate = timeConverter(timeStamp, 'fullDate')
   let dateMonth = timeConverter(timeStamp, 'dateMonth')
 
   admin.database().ref(fullDate + '/' + replyToken).set({
     'userId': userId,
+    'userProfile': userProfile.displayName,
     'text': text,
     'timeStamp': dateMonth
   })
+}
+
+const getUserProfile = async (userId) => {
+  let userProfile = await request.get({
+    uri: `${LINE_GET_PROFILE}/${userId}`,
+    headers: LINE_HEADER
+  })
+  return JSON.parse(userProfile)
 }
 
 const replyDefault = (replyToken) => {
