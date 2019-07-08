@@ -4,10 +4,11 @@ const admin = require('firebase-admin');
 admin.initializeApp();
 
 const LINE_MESSAGING_API = 'https://api.line.me/v2/bot/message';
-const LINE_GET_PROFILE = 'https://api.line.me/v2/bot/profile/';
+const LINE_GET_USER_PROFILE = 'https://api.line.me/v2/bot/profile/';
+const LINE_GET_GROUP_PROFILE = 'https://api.line.me/v2/bot/group/';
 const LINE_HEADER = {
   'Content-Type': 'application/json',
-  Authorization : `Bearer njqYzbipxGtAvq1saQ7jpBgE2niY+dwx5uNDPw6i9zGW4v7J7bx65Gzq1QnQYK2Hp3C5bDKvx7ZwHtj7HpwGvYmdLrE+CPfb8+A4sCZ7l9dTznsMIzBZyamADZmxnzBRo7XtSRqqkhsoAfgf2WAbrwdB04t89/1O/w1cDnyilFU=`
+  Authorization : `Bearer `
 };
 const region = 'asia-east2';
 const runtimeOpts = {
@@ -47,10 +48,18 @@ const writeData = (replyToken, text, userId, userProfile, timeStamp) => {
 
 const getUserProfile = async (userId) => {
   let userProfile = await request.get({
-    uri: `${LINE_GET_PROFILE}/${userId}`,
+    uri: `${LINE_GET_USER_PROFILE}/${userId}`,
     headers: LINE_HEADER
   })
   return JSON.parse(userProfile)
+}
+
+const getGroupProfile = async (groupId) => {
+  let groupProfile = await request.get({
+    uri: `${LINE_GET_GROUP_PROFILE}/${userId}`,
+    headers: LINE_HEADER
+  })
+  return JSON.parse(groupProfile)
 }
 
 const replyDefault = (replyToken) => {
