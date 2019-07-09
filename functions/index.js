@@ -5,6 +5,7 @@ admin.initializeApp();
 
 const LINE_MESSAGING_API = 'https://api.line.me/v2/bot/message';
 const LINE_GET_USER_PROFILE = 'https://api.line.me/v2/bot/profile/';
+const LINE_GET_GROUP_USER_PROFILE = 'https://api.line.me/v2/bot/group/'
 // const LINE_GET_GROUP_PROFILE = 'https://api.line.me/v2/bot/group/';
 const LINE_HEADER = {
   'Content-Type': 'application/json',
@@ -16,40 +17,34 @@ const runtimeOpts = {
   memory: "2GB"
 };
 
-exports.LineBot = functions.region(region).runWith(runtimeOpts).https.onRequest( async (req, res) => {
+exports.LineBot = functions.region(region).runWith(runtimeOpts).https.onRequest((req, res) => {
   
   let event = req.body.events[0]
-  let eventType = "personal", groupId = "";
-
-  if(event.source.type === 'group') {
-    eventType = "group"
-    groupId = event.source.groupId
-  }
-
   let replyToken = event.replyToken
   let text = event.message.text
 
   let userId = event.source.userId
   let timeStamp = event.timestamp
-  let userProfile = await getUserProfile(userId)
-
-  console.log("UserProfile" + userProfile)
 
   if (event.message.type !== 'text') {
       return;
   }
 
-  writeDataToFirebase(eventType, replyToken, text, userId, userProfile, groupId, timeStamp);
+  writeDataToFirebase(event, replyToken, text, userId, timeStamp);
   
 });
 
-const writeDataToFirebase = (eventType, replyToken, text, userId, userProfile, groupId , timeStamp) => {
+const writeDataToFirebase = async (event, replyToken, text, userId, timeStamp) => {
 
   let fullDate = timeConverter(timeStamp, 'fullDate')
   let dateMonth = timeConverter(timeStamp, 'dateMonth')
-  let userName = userProfile.displayName
 
-  if(eventType === 'group') {
+  if(event.source.type === 'group') {
+    let groupId = event.source.groupId
+    let eventType = 'group'
+    let userProfile = await getUserFormGroup(groupId, userId)
+    let userName = userProfile.displayName
+
     admin.database().ref(fullDate + '/' + eventType + '/' + groupId + '/' + replyToken).set({
       'eventType': eventType,
       'userId': userId,
@@ -59,6 +54,10 @@ const writeDataToFirebase = (eventType, replyToken, text, userId, userProfile, g
       'timeStamp': dateMonth
     })
   } else {
+
+    let eventType = 'personal'
+    let userProfile = await getUserProfile(userId)
+    let userName = userProfile.displayName
     admin.database().ref(fullDate + '/' + eventType + '/' + userName + '/' + replyToken).set({
       'eventType': eventType,
       'userId': userId,
@@ -73,6 +72,14 @@ const writeDataToFirebase = (eventType, replyToken, text, userId, userProfile, g
 const getUserProfile = async (userId) => {
   let userProfile = await request.get({
     uri: `${LINE_GET_USER_PROFILE}/${userId}`,
+    headers: LINE_HEADER
+  })
+  return JSON.parse(userProfile)
+}
+
+const getUserFormGroup = async (groupId, userId) => {
+  let userProfile = await request.get({
+    uri: `${LINE_GET_GROUP_USER_PROFILE}/${groupId}/member/${userId}`,
     headers: LINE_HEADER
   })
   return JSON.parse(userProfile)
