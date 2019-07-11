@@ -11,7 +11,7 @@ const LINE_GET_GROUP_USER_PROFILE = 'https://api.line.me/v2/bot/group/'
 // const LINE_GET_GROUP_PROFILE = 'https://api.line.me/v2/bot/group/';
 const LINE_HEADER = {
   'Content-Type': 'application/json',
-  Authorization : `Bearer njqYzbipxGtAvq1saQ7jpBgE2niY+dwx5uNDPw6i9zGW4v7J7bx65Gzq1QnQYK2Hp3C5bDKvx7ZwHtj7HpwGvYmdLrE+CPfb8+A4sCZ7l9dTznsMIzBZyamADZmxnzBRo7XtSRqqkhsoAfgf2WAbrwdB04t89/1O/w1cDnyilFU=`
+  Authorization : `Bearer `
 };
 const region = 'asia-east2';
 const runtimeOpts = {
