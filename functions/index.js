@@ -22,9 +22,15 @@ const runtimeOpts = {
 exports.LineBot = functions.region(region).runWith(runtimeOpts).https.onRequest((req, res) => {
   
   let event = req.body.events[0]
+  let text = event.message.text
 
   if (event.message.type !== 'text') {
-      return;
+    return;
+  }
+
+  if(text.split(" ")[0] === '/p') {
+    getMessage(event)
+    return
   }
 
   writeDataToFirebase(event);
@@ -71,8 +77,29 @@ const writeDataToFirebase = async (event) => {
 
 }
 
-const getMessage = async (key) => {
-  
+const getMessage = async (event) => {
+
+  let timeStamp = event.timestamp
+  let fullDate = timeConverter(timeStamp, 'fullDate')
+  let groupId = event.source.groupId
+  let replyToken = event.replyToken
+
+  admin.database().ref(fullDate + '/' + 'group' + '/' + groupId).orderByChild('text').on('value', (snap) => {
+    let data = snap.val()
+    let message = []
+
+    for(key in data) {
+      message.push({
+        'from': data[key].userProfile,
+        'text': data[key].text,
+        'time': data[key].timeStamp
+      })
+    }
+
+    reply(replyToken, message);
+
+  })
+
 }
 
 
@@ -100,16 +127,16 @@ const getUserFormGroup = async (groupId, userId) => {
 //   return JSON.parse(groupProfile)
 // }
 
-const reply = (bodyResponse, message) => {
+const reply = (replyToken, message) => {
   return request.post({
     uri: `${LINE_MESSAGING_API}/reply`,
     headers: LINE_HEADER,
     body: JSON.stringify({
-      replyToken: bodyResponse.events[0].replyToken,
+      replyToken: replyToken,
       messages: [
         {
           type: `text`,
-          text: message
+          text: JSON.stringify(message)
         }
 	  ]
     })
