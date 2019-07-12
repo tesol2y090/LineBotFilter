@@ -22,21 +22,21 @@ const runtimeOpts = {
 exports.LineBot = functions.region(region).runWith(runtimeOpts).https.onRequest((req, res) => {
   
   let event = req.body.events[0]
-  let replyToken = event.replyToken
-  let text = event.message.text
-
-  let userId = event.source.userId
-  let timeStamp = event.timestamp
 
   if (event.message.type !== 'text') {
       return;
   }
 
-  writeDataToFirebase(event, replyToken, text, userId, timeStamp);
+  writeDataToFirebase(event);
   
 });
 
-const writeDataToFirebase = async (event, replyToken, text, userId, timeStamp) => {
+const writeDataToFirebase = async (event) => {
+
+  let replyToken = event.replyToken
+  let text = event.message.text
+  let userId = event.source.userId
+  let timeStamp = event.timestamp
 
   let fullDate = timeConverter(timeStamp, 'fullDate')
   let dateMonth = timeConverter(timeStamp, 'dateMonth')
@@ -70,6 +70,11 @@ const writeDataToFirebase = async (event, replyToken, text, userId, timeStamp) =
   }
 
 }
+
+const getMessage = async (key) => {
+  
+}
+
 
 const getUserProfile = async (userId) => {
   let userProfile = await request.get({
