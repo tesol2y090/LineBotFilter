@@ -54,12 +54,14 @@ const writeDataToFirebase = async (event) => {
     let eventType = 'group'
     let userProfile = await getUserFormGroup(groupId, userId)
     let userName = userProfile.displayName
+    let pictureUrl = userProfile.pictureUrl
 
     admin.database().ref(fullDate + '/' + eventType + '/' + groupId + '/' + replyToken).set({
       'eventType': eventType,
       'userId': userId,
       'groupId': groupId,
       'userProfile': userName,
+      'pictureUrl': pictureUrl,
       'text': text,
       'timeStamp': dateMonth
     })
@@ -68,10 +70,13 @@ const writeDataToFirebase = async (event) => {
     let eventType = 'personal'
     let userProfile = await getUserProfile(userId)
     let userName = userProfile.displayName
+    let pictureUrl = userProfile.pictureUrl
+
     admin.database().ref(fullDate + '/' + eventType + '/' + userName + '/' + replyToken).set({
       'eventType': eventType,
       'userId': userId,
       'userProfile': userName,
+      'pictureUrl': pictureUrl,
       'text': text,
       'timeStamp': dateMonth
     })
