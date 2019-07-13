@@ -29,7 +29,9 @@ exports.LineBot = functions.region(region).runWith(runtimeOpts).https.onRequest(
   }
 
   if(text.split(" ")[0] === '/p') {
-    getMessage(event)
+    let replyToken = event.replyToken
+    replyFlex(replyToken, "gang")
+    // getMessage(event)
     return
   }
 
@@ -137,6 +139,66 @@ const reply = (replyToken, message) => {
         {
           type: `text`,
           text: JSON.stringify(message)
+        }
+	  ]
+    })
+  });
+};
+
+const replyFlex = (replyToken, message) => {
+  return request.post({
+    uri: `${LINE_MESSAGING_API}/reply`,
+    headers: LINE_HEADER,
+    body: JSON.stringify({
+      replyToken: replyToken,
+      messages: [
+        {
+          type: 'flex',
+          altText: message,
+          contents: {
+            "type": "bubble",
+            "hero": {
+              "type": "image",
+              "url": "https://scdn.line-apps.com/n/channel_devcenter/img/fx/01_2_restaurant.png",
+              "size": "full",
+              "aspectRatio": "20:13",
+              "aspectMode": "cover"
+            },
+            "body": {
+              "type": "box",
+              "layout": "vertical",
+              "spacing": "md",
+              "contents": [
+                {
+                  "type": "text",
+                  "text": "GGAANNGG",
+                  "size": "xl",
+                  "weight": "bold"
+                },
+                {
+                  "type": "text",
+                  "text": "GGAANNGG",
+                  "size": "xs",
+                  "weight": "bold"
+                },
+                {
+                "type": "text",
+                "text": "ทุกคนงานvidweek  ปีนี้คณะเรามีให้ถ่ายรูปเพื่อให้เอาไปเปลี่ยนพร้อมกรอบในfacebook ให้เข้าตรีม มีใครอยากไปถ่ายป่าว มีเวลาตามนี้",
+                "size": "sm",
+                "weight": "bold",
+                "wrap": true,
+                "color": "#aaaaaa"
+                },
+                {
+                  "type": "text",
+                  "text": "13 Jul 2019 10:01:51",
+                  "wrap": true,
+                  "color": "#aaaaaa",
+                  "size": "xxs"
+                }
+              ]
+            }
+          }
         }
 	  ]
     })
