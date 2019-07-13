@@ -2,6 +2,9 @@ const functions = require('firebase-functions');
 const request = require('request-promise');
 const admin = require('firebase-admin');
 const wordcut = require('wordcut')
+
+const flexMessage = require('./flexMessage')
+
 admin.initializeApp();
 wordcut.init();
 
@@ -23,14 +26,15 @@ exports.LineBot = functions.region(region).runWith(runtimeOpts).https.onRequest(
   
   let event = req.body.events[0]
   let text = event.message.text
+  let userId = event.source.userId
 
   if (event.message.type !== 'text') {
     return;
   }
 
-  if(text.split(" ")[0] === '/p') {
+  if(text.split(" ")[0] === '/p' && userId === 'U8f7da99fa55c9b36794140619188a7c7') {
     let replyToken = event.replyToken
-    replyFlex(replyToken, "gang")
+    replyFlex(event)
     // getMessage(event)
     return
   }
@@ -50,6 +54,7 @@ const writeDataToFirebase = async (event) => {
   let dateMonth = timeConverter(timeStamp, 'dateMonth')
 
   if(event.source.type === 'group') {
+
     let groupId = event.source.groupId
     let eventType = 'group'
     let userProfile = await getUserFormGroup(groupId, userId)
@@ -89,26 +94,21 @@ const getMessage = async (event) => {
   let timeStamp = event.timestamp
   let fullDate = timeConverter(timeStamp, 'fullDate')
   let groupId = event.source.groupId
-  let replyToken = event.replyToken
 
-  admin.database().ref(fullDate + '/' + 'group' + '/' + groupId).orderByChild('text').on('value', (snap) => {
-    let data = snap.val()
-    let message = []
-
-    for(key in data) {
-      message.push({
-        'from': data[key].userProfile,
-        'text': data[key].text,
-        'time': data[key].timeStamp
+  let message = await admin.database().ref(fullDate + '/' + 'group' + '/' + groupId).orderByChild('text').once('value')
+  message = message.val()
+  let obj = []
+    for(key in message) {
+      obj.push({
+        'userProfile': message[key].userProfile,
+        'text': message[key].text,
+        'timeStamp': message[key].timeStamp,
+        'groupId': message[key].groupId,
+        'urlProfile': message[key].pictureUrl
       })
     }
-
-    reply(replyToken, message);
-
-  })
-
+    return obj
 }
-
 
 const getUserProfile = async (userId) => {
   let userProfile = await request.get({
@@ -126,14 +126,6 @@ const getUserFormGroup = async (groupId, userId) => {
   return JSON.parse(userProfile)
 }
 
-// const getGroupProfile = async (groupId) => {
-//   let groupProfile = await request.get({
-//     uri: `${LINE_GET_GROUP_PROFILE}/${groupId}/`,
-//     headers: LINE_HEADER
-//   })
-//   return JSON.parse(groupProfile)
-// }
-
 const reply = (replyToken, message) => {
   return request.post({
     uri: `${LINE_MESSAGING_API}/reply`,
@@ -150,7 +142,13 @@ const reply = (replyToken, message) => {
   });
 };
 
-const replyFlex = (replyToken, message) => {
+const replyFlex = async (event) => {
+
+  let arrayMessage = await getMessage(event)
+  let replyToken = event.replyToken
+
+  let content = await flexMessage.carousel(arrayMessage)
+
   return request.post({
     uri: `${LINE_MESSAGING_API}/reply`,
     headers: LINE_HEADER,
@@ -159,51 +157,8 @@ const replyFlex = (replyToken, message) => {
       messages: [
         {
           type: 'flex',
-          altText: message,
-          contents: {
-            "type": "bubble",
-            "hero": {
-              "type": "image",
-              "url": "https://scdn.line-apps.com/n/channel_devcenter/img/fx/01_2_restaurant.png",
-              "size": "full",
-              "aspectRatio": "20:13",
-              "aspectMode": "cover"
-            },
-            "body": {
-              "type": "box",
-              "layout": "vertical",
-              "spacing": "md",
-              "contents": [
-                {
-                  "type": "text",
-                  "text": "GGAANNGG",
-                  "size": "xl",
-                  "weight": "bold"
-                },
-                {
-                  "type": "text",
-                  "text": "GGAANNGG",
-                  "size": "xs",
-                  "weight": "bold"
-                },
-                {
-                "type": "text",
-                "text": "ทุกคนงานvidweek  ปีนี้คณะเรามีให้ถ่ายรูปเพื่อให้เอาไปเปลี่ยนพร้อมกรอบในfacebook ให้เข้าตรีม มีใครอยากไปถ่ายป่าว มีเวลาตามนี้",
-                "size": "sm",
-                "weight": "bold",
-                "wrap": true,
-                "color": "#aaaaaa"
-                },
-                {
-                  "type": "text",
-                  "text": "13 Jul 2019 10:01:51",
-                  "wrap": true,
-                  "color": "#aaaaaa",
-                  "size": "xxs"
-                }
-              ]
-            }
-          }
+          altText: "Important news",
+          contents: content
         }
 	  ]
     })
