@@ -56,6 +56,8 @@ module.exports.carousel = (arrayMessage) => {
 
   if(arrayMessage.length == 1) {
     return this.buble(arrayMessage)
+  } else if(arrayMessage.length > 10) {
+    arrayMessage = arrayMessage.slice(0, 10)
   }
 
   let arrayBuble = []
@@ -64,7 +66,6 @@ module.exports.carousel = (arrayMessage) => {
     let buble = this.buble(arrayMessage[i])
     arrayBuble.push(buble)
   }
-
 
   return {
     "type": "carousel",
