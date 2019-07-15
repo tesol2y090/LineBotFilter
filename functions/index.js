@@ -33,9 +33,7 @@ exports.LineBot = functions.region(region).runWith(runtimeOpts).https.onRequest(
   }
 
   if(text.split(" ")[0] === '/p' && userId === 'U8f7da99fa55c9b36794140619188a7c7') {
-    let replyToken = event.replyToken
     replyFlex(event)
-    // getMessage(event)
     return
   }
 

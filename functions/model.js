@@ -1,4 +1,5 @@
 const wordcut = require('wordcut')
+
 wordcut.init();
 
 const MAX_SEQUENCE_LENGTH = 113;
@@ -39,4 +40,3 @@ if (wordArray.length < MAX_SEQUENCE_LENGTH) {
     wordArray = wordArray.concat(pad_array);
   }
 
-console.log(wordArray)
